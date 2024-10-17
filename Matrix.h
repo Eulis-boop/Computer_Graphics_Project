@@ -4,83 +4,82 @@
 #include <cmath>
 constexpr double M_PI = 3.14159265358979323846;
 
-class Matrix
-{
-public:
-	std::vector<float> mat;
+class Matrix {
+private:
+    float data[4][4];  // Arreglo bidimensional para la matriz 4x4
 
-	//Constructor identity matrix
-	Matrix() {
-		mat = std::vector<float>(16, 0.0f);
-		mat[0] = mat[5] = mat[10], mat[15] = 1.0f;
-	}
-	//Create translation matrix
-	static Matrix translation(float tx, float ty, float tz) {
-		Matrix m;
-		m.mat[12] = tx;
-		m.mat[13] = ty;
-		m.mat[14] = tz;
-		return m;
-	}
-	//Create scaling matrix
-	static Matrix scaling(float sx, float sy, float sz) {
-		Matrix m;
-		m.mat[0] = sx;
-		m.mat[5] = sy;
-		m.mat[10] = sz;
-		return m;
-	}
-	//Create rotation X matrix
-	static Matrix rotationX(float angle) {
-		Matrix m;
-		float radians = angle * M_PI / 180.0f;
-		m.mat[5] = cos(radians);
-		m.mat[6] = -sin(radians);
-		m.mat[9] = sin(radians);
-		m.mat[10] = cos(radians);
-		return m;
-	}
-	//Create rotation Y matrix
-	static Matrix rotationY(float angle) {
-		Matrix m;
-		float radians = angle * M_PI / 180.0f;
-		m.mat[0] = cos(radians);
-		m.mat[2] = sin(radians);
-		m.mat[8] = -sin(radians);
-		m.mat[10] = cos(radians);
-		return m;
-	}
-	//Create rotation Z matrix
-	static Matrix rotationZ(float angle) {
-		Matrix m;
-		float radians = angle * M_PI / 180.0f;
-		m.mat[0] = cos(radians);
-		m.mat[1] = -sin(radians);
-		m.mat[4] = sin(radians);
-		m.mat[5] = cos(radians);
-		return m;
-	}
-	//Multiply matrices
-	Matrix operator*(const Matrix& other) {
-		Matrix result;
-		for (int i = 0; i < 4; i++) {
-			for (int j = 0; j < 4; j++) {
-				result.mat[i + j * 4] = 0.0f;
-				for (int k = 0; k < 4; k++) {
-					result.mat[i + j * 4] += mat[i + k * 4] * other.mat[k + j * 4];
-				}
-			}
-		}
-		return result;
-	}
-	//Print matrix
-	void print() {
-		for (int i = 0; i < 4; ++i) {
-			for (int j = 0; j < 4; ++j) {
-				std::cout << mat[i + j * 4] << " ";
-			}
-			std::cout << std::endl;
-		}
-	}
+public:
+    Matrix() {
+        // Inicializa la matriz identidad
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                data[i][j] = (i == j) ? 1.0f : 0.0f;
+            }
+        }
+    }
+
+    float* operator[](int index) {
+        return data[index];  // Sobrecarga del operador para acceder a las filas
+    }
+
+    // Multiplicación de matrices
+    Matrix operator*(const Matrix& other) {
+        Matrix result;
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                result[i][j] = 0.0f;
+                for (int k = 0; k < 4; ++k) {
+                    result[i][j] += data[i][k] * other.data[k][j];
+                }
+            }
+        }
+        return result;
+    }
+
+    // Método para traslación
+    void translate(float tx, float ty, float tz) {
+        data[0][3] += tx;
+        data[1][3] += ty;
+        data[2][3] += tz;
+    }
+
+    // Método para rotaciones alrededor de X, Y y Z
+    void rotationX(float angle) {
+        float rad = angle * M_PI / 180.0f;
+        Matrix rotation;
+        rotation[1][1] = cos(rad);
+        rotation[1][2] = -sin(rad);
+        rotation[2][1] = sin(rad);
+        rotation[2][2] = cos(rad);
+        *this = *this * rotation;
+    }
+
+    void rotationY(float angle) {
+        float rad = angle * M_PI / 180.0f;
+        Matrix rotation;
+        rotation[0][0] = cos(rad);
+        rotation[0][2] = sin(rad);
+        rotation[2][0] = -sin(rad);
+        rotation[2][2] = cos(rad);
+        *this = *this * rotation;
+    }
+
+    void rotationZ(float angle) {
+        float rad = angle * M_PI / 180.0f;
+        Matrix rotation;
+        rotation[0][0] = cos(rad);
+        rotation[0][1] = -sin(rad);
+        rotation[1][0] = sin(rad);
+        rotation[1][1] = cos(rad);
+        *this = *this * rotation;
+    }
+
+    // Escalado
+    void scale(float sx, float sy, float sz) {
+        data[0][0] *= sx;
+        data[1][1] *= sy;
+        data[2][2] *= sz;
+    }
 };
+
 
