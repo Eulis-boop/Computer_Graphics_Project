@@ -4,21 +4,20 @@
 */
 
 #include <GL/freeglut.h>
+#include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-//#include <ncurses.h>
 #include <iostream>
 #include <vector>
 #include <string>
 #include <fstream>
 #include <sstream>
-//#pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
 #include "Object3D.h"
 #include "Face.h"
 
 using namespace std;
-
+GLFWwindow* window;
 vector<Object3D> objects3d;
 
 //Variables para calcular FPS
@@ -30,89 +29,60 @@ float cam_pos_x = 0.0f, cam_pos_y = 0.0f, cam_pos_z = 5.0f;
 float cam_cen_x = 0.0f, cam_cen_y = 0.0f, cam_cen_z = 0.0f;
 //Variables movimiento mouse
 float angle_x = 0.0f, angle_y = 0.0f;
-int last_mouse_x = 0, last_mouse_y = 0;
+double last_mouse_x = 0.0, last_mouse_y = 0.0;
 bool is_dragging = false; //Controlar si se está arrastrando el mouse
 
 //Función movimiento mouse
-void mouseMotion(int x, int y) {
-	if (is_dragging) {
-		int dx = x - last_mouse_x;
-		int dy = y - last_mouse_y;
+void mouseMotion(/*GLFWwindow* window,double x, double y*/) {
+	double current_mouse_x, current_mouse_y;
+	//Obtain the current mouse position
+	glfwGetCursorPos(window, &current_mouse_x, &current_mouse_y);
 
-		//Ajustar ángulos en función del movimiento del mouse
+	if (is_dragging) {
+		//Calculate mouse movement
+		double dx = current_mouse_x - last_mouse_x;
+		double dy = current_mouse_y - last_mouse_y;
+
 		angle_x += dx * 0.1f; //Sensibilidad rotación en x
 		angle_y += dy * 0.1f; //Sensibilidad rotación en y
 
-		//Limita el ángulo de rotación vertical para evitar que la cámara se voltee
+		//Limitar el ángulo de rotación vertical para evitar que la cámara se voltee
 		if (angle_y > 89.0f) angle_y = 89.0f;
 		if (angle_y < -89.0f) angle_y = -89.0f;
-
-		last_mouse_x = x;
-		last_mouse_y = y;
 	}
+
+	//Actualizar la última posición del mouse
+	last_mouse_x = current_mouse_x;
+	last_mouse_y = current_mouse_y;
 }
-bool f = false;
 
 //Función para manejar el clic del mouse
-void mouseButton(int button, int state, int x, int y) {
-	if (button == GLUT_LEFT_BUTTON) {
-		if (state == GLUT_DOWN) {
-			is_dragging = true;
-			last_mouse_x = x;
-			last_mouse_y = y;
-		}
-		else {
-			is_dragging = false;
-		}
+void mouseButton(/*GLFWwindow* window,*/) {
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+		is_dragging = true;
+	} else {
+		is_dragging = false;
 	}
 }
 
 //Función movimiento teclado
-void handleKeypress(unsigned char key, int x, int y) {
-	switch (key) {
-		//Movimiento de la posición de la cámara
-	case 'A': case 'a':
-		cam_pos_x += 0.2f;
-		break;
-	case 'S': case 's':
-		cam_pos_y += 0.2f;
-		break;
-	case 'D': case 'd':
-		cam_pos_z += 0.2f;
-		break;
-	case 'Z': case 'z':
-		cam_pos_x -= 0.2f;
-		break;
-	case 'X': case 'x':
-		cam_pos_y -= 0.2f;
-		break;
-	case 'C': case 'c':
-		cam_pos_z -= 0.2f;
-		break;
+void handleKeypress() {
+	//Movimiento de la vista de la cámara
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) cam_pos_x += 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) cam_pos_y += 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) cam_pos_z += 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) cam_pos_x -= 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) cam_pos_y -= 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) cam_pos_z -= 0.2f / 100;
+	//Movimiento de la posición de la cámara
+	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) cam_cen_x += 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) cam_cen_y += 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) cam_cen_z += 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS) cam_cen_x -= 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS) cam_cen_y -= 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) cam_cen_z -= 0.2f / 100;
 
-		//Movimiento del centro (hacia dónde ve la cámara)
-	case 'H': case 'h':
-		cam_cen_x += 0.2f;
-		break;
-	case 'J': case 'j':
-		cam_cen_y += 0.2f;
-		break;
-	case 'K': case 'k':
-		cam_cen_z += 0.2f;
-		break;
-	case 'B': case 'b':
-		cam_cen_x -= 0.2f;
-		break;
-	case 'N': case 'n':
-		cam_cen_y -= 0.2f;
-		break;
-	case 'M': case 'm':
-		cam_cen_z -= 0.2f;
-		break;
-	case 27: //Esc para salir
-		exit(0);
-		break;
-	}
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
 }
 
 void printText(float x, float y, const char* text) {
@@ -123,41 +93,55 @@ void printText(float x, float y, const char* text) {
 
 //Draw FPS
 void drawFPS() {
-	glColor3f(1.0f, 1.0f, 1.0f); //Set text color to white
+	//Switch to orthographic projection
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix(); //Save the current projection matrix
+	glLoadIdentity();
+
+	//Set up an orthographic projection (2D mode)
+	gluOrtho2D(0, 800, 0, 600);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix(); //Save the current modelview matrix
+	glLoadIdentity();
+
+	//Disable depth test so the text is not affected by the 3D depth
+	glDisable(GL_DEPTH_TEST);
+
+	//Set text color to white
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+	//Prepare the FPS string
 	char buffer[50];
 	snprintf(buffer, sizeof(buffer), "FPS: %.2f", fps);
-	printText(10, 10, buffer); //Draw FPS at (10, 10)
+	printText(10, 580, buffer); //Draw FPS at the top-left corner
+
+	//Restore depth testing
+	glEnable(GL_DEPTH_TEST);
+	//Restore the previous modelview matrix
+	glPopMatrix();
+	//Restore the previous projection matrix
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+
+	//Switch back to modelview
+	glMatrixMode(GL_MODELVIEW);
 }
 
 //Calculate FPS
 void calculateFPS() {
+	//Get the number of milliseconds since glutInit called
+	current_time = glfwGetTime();
 	//Increase frame count
 	frame_count++;
-	//Get the number of milliseconds since glutInit called
-	current_time = glutGet(GLUT_ELAPSED_TIME);
 	//Calculate time passed
 	int time_interval = current_time - previous_time;
 
-	if (time_interval > 1000) {
-		//Calculate the number of frames per second
-		fps = frame_count / (time_interval / 1000.0f);
-		//Set time
+	if (time_interval >= 1.0) {
+		fps = frame_count / time_interval;
 		previous_time = current_time;
-		//Reset frame count
 		frame_count = 0;
 	}
-}
-
-/*This function is called when OpenGL/GLUT is not working on something else.
-	It's like the timers but time intervals are dependent on how busy the app is,
-	instead of having a constant value set by the user.
-*/
-void idle(void) {
-	//Calculate FPS
-	calculateFPS();
-	
-	//Call display function (draw the current frame)
-	glutPostRedisplay();
 }
 
 bool loadOBJ(const std::string& path) {
@@ -239,10 +223,11 @@ void display(void)
 		}
 	}
 	glEnd();
-
+	
+	calculateFPS();
 	drawFPS(); //Draw FPS
 
-	glutSwapBuffers(); //se dibuja en un buffer de memoria atrás y cuando se deba cambiar de imagen, se cambia los buffers
+	glfwSwapBuffers(window); //se dibuja en un buffer de memoria atrás y cuando se deba cambiar de imagen, se cambia los buffers
 	glFlush(); //se eliminan las cosas que se deban eliminar, porque ya se terminó de dibujar
 }
 
@@ -254,13 +239,10 @@ void init(void)
 	/*  initialize viewing values  */
 	glMatrixMode(GL_PROJECTION); //selecciona que tipo de matriz estamos trabajando
 	glLoadIdentity(); //debe cargar la matriz identidad
-	//if (!f) {
-		//glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
-	//}
-	//else {
-		//gluOrtho2D(0.0, 800, 0.0, 600); //Set the 2D orthographic projection
-	//}
-	//f = !f;
+
+	//glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
+	//gluOrtho2D(0.0, 800, 0.0, 600); //Set the 2D orthographic projection
+
 	gluPerspective(45.0, 800.0 / 600.0, 0.1, 100.0); //es la matriz de proyeccion
 	//ángulo de vista, aspecto donde va a dibujar los vértices, setANear, setAFar
 	//en 2D se llama proyeccion ortogonal y en 3D es proyeccion en perspectiva
@@ -284,13 +266,31 @@ void init(void)
  */
 int main(int argc, char** argv)
 {
-	//Glut inicializa ventanas, teclado, etc.
 	glutInit(&argc, argv); //Inicializa OpenGL
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH); //Dibuja, nos indica que usemos RGB, y el último es un buffer de profundidad
-	glutInitWindowSize(800, 600); //Tamaño de la ventana
-	glutInitWindowPosition(100, 100); //Posición inicial de la ventana
-	glutCreateWindow("3D Model"); //Crea la ventana, podemos poner cualquier nombre a la ventana
+	//glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH); //Dibuja, nos indica que usemos RGB, y el último es un buffer de profundidad
+	if (!glfwInit()) {
+		std::cerr << "Failed to initialize GLFW" << std::endl;
+		return -1;
+	}
 
+	//Glut inicializa ventanas, teclado, etc.
+	//glutInitWindowSize(800, 600); //Tamaño de la ventana
+	//glutInitWindowPosition(100, 100); //Posición inicial de la ventana
+	//glutCreateWindow("3D Model"); //Crea la ventana, podemos poner cualquier nombre a la ventana
+
+	//Create a windowed mode window and its OpenGL context
+	window = glfwCreateWindow(800, 600, "3D Model", NULL, NULL);
+	if (!window) {
+		std::cerr << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
+		return -1;
+	}
+
+	//Make the window's context current
+	glfwMakeContextCurrent(window);
+	//glfwSetKeyCallback(window, handleKeypress); //Movimiento usando las teclas
+	//glfwSetCursorPosCallback(window, mouseMotion); //Movimiento del mouse con botón presionado
+	//glfwSetMouseButtonCallback(window, mouseButton); //Detecta clics del mouse
 	init(); //Initialize OpenGL settings
 
 	//Cargar el modelo .obj
@@ -304,15 +304,22 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	glutDisplayFunc(display); //Se debe registrar la función de dibujado
-	glutIdleFunc(idle); //For continuous updates (FPS)
-	//glutIdleFunc(display); //Mientras el programa no está "haciendo algo"/inactivo se manda llamar la función para que este dibujando todo el tiempo o redibujando
-	glutKeyboardFunc(handleKeypress); //Movimiento usando las teclas
-	glutMotionFunc(mouseMotion); //Movimiento del mouse con botón presionado
-	glutMouseFunc(mouseButton); //Detecta clics del mouse
-	
+	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
+		double initial_time = glfwGetTime();
+		display();
+		mouseMotion();
+		mouseButton();
+		handleKeypress();
+		glfwPollEvents();
+	}
 
-	glutMainLoop(); //Esta función tiene un ciclo que se detiene hasta que se cierre la aplicación y manda llamar dentro del ciclo la función display() para estar dibujando
+	//glutDisplayFunc(display); //Se debe registrar la función de dibujado
+	//glutIdleFunc(idle); //For continuous updates (FPS)
+	//glutIdleFunc(display); //Mientras el programa no está "haciendo algo"/inactivo se manda llamar la función para que este dibujando todo el tiempo o redibujando
+	//glutMainLoop(); //Esta función tiene un ciclo que se detiene hasta que se cierre la aplicación y manda llamar dentro del ciclo la función display() para estar dibujando
+	
+	//Clean up GLFW
+	glfwTerminate();
 
 	return 0;   /* ISO C requires main to return int. */
 }
