@@ -21,12 +21,21 @@ using namespace std;
 GLFWwindow* window;
 vector<Object3D> objects3d;
 
+//Curva de Bézier
+Vertex Bezier(Vertex p1, Vertex p2, Vertex p3, Vertex p4, float t) {
+	Vertex res;
+	res.x = pow(1 - t, 3) * p1.x + 3 * pow(1 - t, 2) * t * p2.x + 3 * (1 - t) * pow(t, 2) * p3.x + pow(t, 3) * p4.x;
+	res.y = pow(1 - t, 3) * p1.y + 3 * pow(1 - t, 2) * t * p2.y + 3 * (1 - t) * pow(t, 2) * p3.y + pow(t, 3) * p4.y;
+	res.z = pow(1 - t, 3) * p1.z + 3 * pow(1 - t, 2) * t * p2.z + 3 * (1 - t) * pow(t, 2) * p3.z + pow(t, 3) * p4.z;
+	return res;
+}
+
 //Variables para calcular FPS
 int frame_count = 0, current_time = 0, previous_time = 0;
 float fps = 0.0f;
 
 //Variables movimiento con teclado
-float cam_pos_x = 0.0f, cam_pos_y = 0.0f, cam_pos_z = 5.0f;
+float cam_pos_x = 0.0f, cam_pos_y = 0.0f, cam_pos_z = 40.0f;
 float cam_cen_x = 0.0f, cam_cen_y = 0.0f, cam_cen_z = 0.0f;
 //Variables movimiento mouse
 float angle_x = 0.0f, angle_y = 0.0f;
@@ -146,17 +155,17 @@ void calculateFPS() {
 	}
 }
 
-bool loadOBJ(const std::string& path) {
-	std::ifstream file(path);
+bool loadOBJ(const string& path) {
+	ifstream file(path);
 	if (!file.is_open()) {
-		std::cerr << "Error opening the file: " << path << std::endl;
+		cerr << "Error opening the file: " << path << endl;
 		return false;
 	}
 	Object3D obj;
-	std::string line;
-	while (std::getline(file, line)) {
-		std::istringstream ss(line);
-		std::string token;
+	string line;
+	while (getline(file, line)) {
+		istringstream ss(line);
+		string token;
 		ss >> token;
 
 		if (token == "v") {
@@ -184,7 +193,6 @@ bool loadOBJ(const std::string& path) {
 	file.close();
 	return true;
 }
-
 void display(void)
 {
 	/*  clear all pixels  */
@@ -193,9 +201,9 @@ void display(void)
 
 	//Color de los vértices, openGL degrada el color de los vértices por default por eso las caras tienen color
 	//glColor3f(1.0f, 0.0f, 0.0f);
+	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-
 	glRotatef(angle_y, 1.0f, 0.0f, 0.0f); //Rotación vertical
 	glRotatef(angle_x, 0.0f, 1.0f, 0.0f); //Rotación horizontal
 	gluLookAt(cam_pos_x, cam_pos_y, cam_pos_z, cam_cen_x, cam_cen_y, cam_cen_z, 0.0, 1.0, 0.0);
@@ -203,26 +211,46 @@ void display(void)
 	//Dibujo del objeto
 	glBegin(GL_TRIANGLES);
 	//Para empezar a dibujar se debe mandar a llamar la función glBegin
+
+	//Puntos de control de Bézier
+	Vertex p1, p2, p3, p4;
+	p1.x = -15;
+	p1.y = -10;
+	p1.z = 2;
+	p2.x = -15; 
+	p2.y = 10;
+	p2.z = 2;
+	p3.x = 15;
+	p3.y = 10;
+	p3.z = 3;
+	p4.x = 15;
+	p4.y = -10;
+	p4.z = 3;
 	for (int o = 0; o < objects3d.size(); o++) {
+		Vertex vb = Bezier(p1, p2, p3, p4, objects3d[o].t);
+		Vertex fv = objects3d[o].faces[0].v1;
+		Matrix mt = Matrix::translationMatrix(vb.x - fv.x, vb.y - fv.y, vb.z - fv.z);
 		for (int c = 0; c < objects3d[o].faces.size(); c++) {
+			Vertex v1 = objects3d[o].vertices[objects3d[o].faces[c].v1];
+			Vertex v2 = objects3d[o].vertices[objects3d[o].faces[c].v2];
+			Vertex v3 = objects3d[o].vertices[objects3d[o].faces[c].v3];
+			// Transform each vertex of the face
+			Vertex vt1 = mt * v1;
+			Vertex vt2 = mt * v2;
+			Vertex vt3 = mt * v3;
+			// Draw the transformed vertices
 			int index = objects3d[o].faces[c].v1;
 			glColor3f(objects3d[o].vertices[index].r, objects3d[o].vertices[index].g, objects3d[o].vertices[index].b);
-			glVertex3f(objects3d[o].vertices[index].x,
-				objects3d[o].vertices[index].y,
-				objects3d[o].vertices[index].z);
-
+			glVertex3f(vt1.x, vt1.y, vt1.z);
 			index = objects3d[o].faces[c].v2;
 			glColor3f(objects3d[o].vertices[index].r, objects3d[o].vertices[index].g, objects3d[o].vertices[index].b);
-			glVertex3f(objects3d[o].vertices[index].x,
-				objects3d[o].vertices[index].y,
-				objects3d[o].vertices[index].z);
-
+			glVertex3f(vt2.x, vt2.y, vt2.z);
 			index = objects3d[o].faces[c].v3;
 			glColor3f(objects3d[o].vertices[index].r, objects3d[o].vertices[index].g, objects3d[o].vertices[index].b);
-			glVertex3f(objects3d[o].vertices[index].x,
-				objects3d[o].vertices[index].y,
-				objects3d[o].vertices[index].z);
+			glVertex3f(vt3.x, vt3.y, vt3.z);
 		}
+		objects3d[o].t += 0.005f;
+		if (objects3d[o].t >= 1.0f) objects3d[o].t = 0.0f;
 	}
 	glEnd();
 
@@ -271,7 +299,7 @@ int main(int argc, char** argv)
 	glutInit(&argc, argv); //Inicializa OpenGL
 	//glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH); //Dibuja, nos indica que usemos RGB, y el último es un buffer de profundidad
 	if (!glfwInit()) {
-		std::cerr << "Failed to initialize GLFW" << std::endl;
+		cerr << "Failed to initialize GLFW" << endl;
 		return -1;
 	}
 
@@ -283,7 +311,7 @@ int main(int argc, char** argv)
 	//Create a windowed mode window and its OpenGL context
 	window = glfwCreateWindow(800, 600, "3D Model", NULL, NULL);
 	if (!window) {
-		std::cerr << "Failed to create GLFW window" << std::endl;
+		cerr << "Failed to create GLFW window" << endl;
 		glfwTerminate();
 		return -1;
 	}
@@ -294,17 +322,19 @@ int main(int argc, char** argv)
 	//glfwSetCursorPosCallback(window, mouseMotion); //Movimiento del mouse con botón presionado
 	//glfwSetMouseButtonCallback(window, mouseButton); //Detecta clics del mouse
 	init(); //Initialize OpenGL settings
+	
+	glfwSwapInterval(1);
 
 	//Cargar el modelo .obj
 	if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\cubo.obj")) {
 		return -1;
 	}
-	if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\esfera.obj")) {
+	/*/if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\esfera.obj")) {
 		return -1;
 	}
 	if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\capsula.obj")) {
 		return -1;
-	}
+	}*/
 
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
 		double initial_time = glfwGetTime();

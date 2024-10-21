@@ -10,5 +10,6 @@ class Object3D
 public:
 	vector<Vertex> vertices;
 	vector<Face> faces;
+	float t = 0.0f;
 };
 
