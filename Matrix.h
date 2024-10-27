@@ -1,97 +1,173 @@
 #pragma once
-#include <iostream>
 #include <vector>
 #include <cmath>
+#include <random>
 #include "Vertex.h"
-constexpr double M_PI = 3.14159265358979323846;
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+// using namespace std; para eliminar el std::
 
 class Matrix {
-private:
-    float mat[4][4];
+public:
+	float rx, ry, rz;
+	float grados_x, grados_y, grados_z;
+	Vertex p[4];
+
+	Matrix() {
+		std::random_device rd; // Obtiene una semilla aleatoria
+		std::mt19937 gen(rd()); // Generador de n?meros aleatorios
+		std::uniform_real_distribution<float> t_dist(-20.5f, 16.0f); // Distribuci?n para la traslaci?n entre 0.5 y 6
+		std::uniform_real_distribution<float> r_dist(0.0f, 180.0f); // Distribuci?n para la rotaci?n entre 0 y 180
+
+		p->b = p->g = p->r = 0.0f;
+		for (int i = 0; i < 3; i++) {
+			p[i].x = t_dist(gen);
+			p[i].y = t_dist(gen);
+			p[i].z = t_dist(gen);
+		}
+
+		rx = ry = rz = 0.0f;
+		grados_x = r_dist(gen) * (M_PI / 180.0f);
+		grados_y = r_dist(gen) * (M_PI / 180.0f);
+		grados_z = r_dist(gen) * (M_PI / 180.0f);
+	}
 
 public:
-    Matrix() {
-        //Initialize identity matrix
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < 4; ++j) {
-                mat[i][j] = (i == j) ? 1.0f : 0.0f;
-            }
-        }
-    }
+	void changeP(int i, float px, float py, float pz)
+	{
+		if (i < 4) {
+			p[i].x = px;
+			p[i].y = py;
+			p[i].z = pz;
 
-    //Multiplication with another matrix
-    Matrix operator*(const Matrix& other) {
-        Matrix result;
-        for (int i = 0; i < 4; ++i) {
-            for (int j = 0; j < 4; ++j) {
-                result.mat[i][j] = 0.0f;
-                for (int k = 0; k < 4; ++k) {
-                    result.mat[i][j] += mat[i][k] * other.mat[k][j];
-                }
-            }
-        }
-        return result;
-    }
+		}
+	}
 
-    // Método para traslación
-    static Matrix translationMatrix(float tx, float ty, float tz) {
-        Matrix mat;
-        mat.mat[0][3] = tx;
-        mat.mat[1][3] = ty;
-        mat.mat[2][3] = tz;
-        return mat;
-    }
+	void changeRot(float x, float y, float z)
+	{
+		grados_x = x * (M_PI / 180.0f);
+		grados_y = y * (M_PI / 180.0f);
+		grados_z = z * (M_PI / 180.0f);
+	}
 
-    // Método para rotaciones alrededor de X, Y y Z
-    static Matrix rotationX(float angle) {
-        Matrix mat;
-        float rad = angle * (M_PI / 180.0f); // Convert degrees to radians
-        mat.mat[1][1] = cos(rad);
-        mat.mat[1][2] = -sin(rad);
-        mat.mat[2][1] = sin(rad);
-        mat.mat[2][2] = cos(rad);
-        return mat;
-    }
+	float** trasMatrix(float tx, float ty, float tz)
+	{
+		float t[3] = { tx, ty, tz };
+		float** mat = new float* [4];
 
-    static Matrix rotationY(float angle) {
-        Matrix mat;
-        float rad = angle * (M_PI / 180.0f);
-        mat.mat[0][0] = cos(rad);
-        mat.mat[0][2] = sin(rad);
-        mat.mat[2][0] = -sin(rad);
-        mat.mat[2][2] = cos(rad);
-        return mat;
-    }
+		for (int i = 0; i < 4; i++)
+			mat[i] = new float[4];
 
-    static Matrix rotationZ(float angle) {
-        Matrix mat;
-        float rad = angle * (M_PI / 180.0f);
-        mat.mat[0][0] = cos(rad);
-        mat.mat[0][1] = -sin(rad);
-        mat.mat[1][0] = sin(rad);
-        mat.mat[1][1] = cos(rad);
-        return mat;
-    }
+		for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 4; j++) {
+				mat[i][j] = (i == j) ? 1.0f : 0.0f;
+				if (i < 3 && j == 3)
+					mat[i][j] = t[i];
+			}
 
-    // Escalado
-    static Matrix scalingMatrix(float sx, float sy, float sz) {
-        Matrix mat;
-        mat.mat[0][0] = sx;
-        mat.mat[1][1] = sy;
-        mat.mat[2][2] = sz;
-        return mat;
-    }
+		return mat;
+	}
 
-    // Overload * operator to multiply a matrix by a vertex
-    friend Vertex operator*(const Matrix& mat, const Vertex& v);
+	float** rxMatrix(float rx)
+	{
+		float** mat = new float* [4];
+		rx = rx * M_PI / 180.0f;
+
+		for (int i = 0; i < 4; i++)
+			mat[i] = new float[4];
+
+		for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 4; j++)
+				mat[i][j] = (i == j) ? 1.0f : 0.0f;
+
+		mat[1][1] = mat[2][2] = cos(rx);
+		mat[1][2] = -sin(rx);
+		mat[2][1] = sin(rx);
+
+		return mat;
+	}
+
+	float** ryMatrix(float ry)
+	{
+		float** mat = new float* [4];
+		ry = ry * M_PI / 180.0f;
+
+		for (int i = 0; i < 4; i++)
+			mat[i] = new float[4];
+
+		for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 4; j++)
+				mat[i][j] = (i == j) ? 1.0f : 0.0f;
+
+		mat[0][0] = mat[2][2] = cos(ry);
+		mat[0][2] = sin(ry);
+		mat[2][0] = -sin(ry);
+
+		return mat;
+	}
+
+	float** rzMatrix(float rz)
+	{
+		float** mat = new float* [4];
+		rz = rz * M_PI / 180.0f;
+
+		for (int i = 0; i < 4; i++)
+			mat[i] = new float[4];
+
+		for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 4; j++)
+				mat[i][j] = (i == j) ? 1.0f : 0.0f;
+
+		mat[0][0] = mat[1][1] = cos(rz);
+		mat[0][1] = -sin(rz);
+		mat[1][0] = sin(rz);
+
+		return mat;
+	}
+
+	float** multMatrix(float** A, float** B)
+	{
+		float** C = new float* [4];
+
+		for (int i = 0; i < 4; i++)
+			C[i] = new float[4];
+
+		for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 4; j++)
+				C[i][j] = 0;
+
+		for (int i = 0; i < 4; i++)
+			for (int j = 0; j < 4; j++)
+				for (int k = 0; k < 4; k++)
+					C[i][j] += A[i][k] * B[k][j];
+
+		return C;
+	}
+
+	float** rotMatrix(Vertex c)
+	{
+		float** res = multMatrix(trasMatrix(c.x, c.y, c.z), rzMatrix(rz));
+		res = multMatrix(res, ryMatrix(ry));
+		res = multMatrix(res, rxMatrix(rx));
+		res = multMatrix(res, trasMatrix(c.x * -1, c.y * -1, c.z * -1));
+		return res;
+	}
+
+	Vertex resVector(float** A, Vertex B)
+	{
+		Vertex v;
+
+		v.b = B.b;
+		v.g = B.g;
+		v.r = B.r;
+
+		v.x = A[0][0] * B.x + A[0][1] * B.y + A[0][2] * B.z + A[0][3];
+		v.y = A[1][0] * B.x + A[1][1] * B.y + A[1][2] * B.z + A[1][3];
+		v.z = A[2][0] * B.x + A[2][1] * B.y + A[2][2] * B.z + A[2][3];
+
+		return v;
+	}
 };
-
-//Apply model matrix to a vertex (4D vector)
-inline Vertex operator*(const Matrix& mat, const Vertex& v) {
-    Vertex result;
-    result.x = mat.mat[0][0] * v.x + mat.mat[0][1] * v.y + mat.mat[0][2] * v.z + mat.mat[0][3] * v.w;
-    result.y = mat.mat[1][0] * v.x + mat.mat[1][1] * v.y + mat.mat[1][2] * v.z + mat.mat[1][3] * v.w;
-    result.z = mat.mat[2][0] * v.x + mat.mat[2][1] * v.y + mat.mat[2][2] * v.z + mat.mat[2][3] * v.w;
-    result.w = mat.mat[3][0] * v.x + mat.mat[3][1] * v.y + mat.mat[3][2] * v.z + mat.mat[3][3] * v.w;
-    return result;
-}

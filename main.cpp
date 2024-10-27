@@ -1,5 +1,5 @@
-/* Computer Graphics Project
-* Author: Castillo Turrubiartes Eunice Saraí
+ï»¿/* Computer Graphics Project
+* Author: Castillo Turrubiartes Eunice SaraÃ­
 * Created: August 2024 - present
 */
 
@@ -21,28 +21,31 @@ using namespace std;
 GLFWwindow* window;
 vector<Object3D> objects3d;
 
-//Curva de Bézier
-Vertex Bezier(Vertex p1, Vertex p2, Vertex p3, Vertex p4, float t) {
-	Vertex res;
-	res.x = pow(1 - t, 3) * p1.x + 3 * pow(1 - t, 2) * t * p2.x + 3 * (1 - t) * pow(t, 2) * p3.x + pow(t, 3) * p4.x;
-	res.y = pow(1 - t, 3) * p1.y + 3 * pow(1 - t, 2) * t * p2.y + 3 * (1 - t) * pow(t, 2) * p3.y + pow(t, 3) * p4.y;
-	res.z = pow(1 - t, 3) * p1.z + 3 * pow(1 - t, 2) * t * p2.z + 3 * (1 - t) * pow(t, 2) * p3.z + pow(t, 3) * p4.z;
-	return res;
-}
-
 //Variables para calcular FPS
 int frame_count = 0, current_time = 0, previous_time = 0;
 float fps = 0.0f;
 
 //Variables movimiento con teclado
-float cam_pos_x = 0.0f, cam_pos_y = 0.0f, cam_pos_z = 40.0f;
+float cam_pos_x = 0.0f, cam_pos_y = 0.0f, cam_pos_z = 30.0f;
 float cam_cen_x = 0.0f, cam_cen_y = 0.0f, cam_cen_z = 0.0f;
 //Variables movimiento mouse
 float angle_x = 0.0f, angle_y = 0.0f;
 double last_mouse_x = 0.0, last_mouse_y = 0.0;
-bool is_dragging = false; //Controlar si se está arrastrando el mouse
+bool is_dragging = false; //Controlar si se estÃ¡ arrastrando el mouse
 
-//Función movimiento mouse
+// Variables para curva de Bezier
+float radius = 2.5;
+
+//Curva de BÃ©zier
+Vertex Bezier(Vertex p1, Vertex p2, Vertex p3, Vertex p4, float t) {
+	Vertex res;
+	res.x = powf(1 - t, 3) * p1.x + 3 * powf(1 - t, 2) * t * p2.x + 3 * (1 - t) * powf(t, 2) * p3.x + powf(t, 3) * p4.x;
+	res.y = powf(1 - t, 3) * p1.y + 3 * powf(1 - t, 2) * t * p2.y + 3 * (1 - t) * powf(t, 2) * p3.y + powf(t, 3) * p4.y;
+	res.z = powf(1 - t, 3) * p1.z + 3 * powf(1 - t, 2) * t * p2.z + 3 * (1 - t) * powf(t, 2) * p3.z + powf(t, 3) * p4.z;
+	return res;
+}
+
+//FunciÃ³n movimiento mouse
 void mouseMotion(/*GLFWwindow* window,double x, double y*/) {
 	double current_mouse_x, current_mouse_y;
 	//Obtain the current mouse position
@@ -53,20 +56,20 @@ void mouseMotion(/*GLFWwindow* window,double x, double y*/) {
 		double dx = current_mouse_x - last_mouse_x;
 		double dy = current_mouse_y - last_mouse_y;
 
-		angle_x += dx * 0.1f; //Sensibilidad rotación en x
-		angle_y += dy * 0.1f; //Sensibilidad rotación en y
+		angle_x += dx * 0.1f; //Sensibilidad rotaciÃ³n en x
+		angle_y += dy * 0.1f; //Sensibilidad rotaciÃ³n en y
 
-		//Limitar el ángulo de rotación vertical para evitar que la cámara se voltee
+		//Limitar el Ã¡ngulo de rotaciÃ³n vertical para evitar que la cÃ¡mara se voltee
 		if (angle_y > 89.0f) angle_y = 89.0f;
 		if (angle_y < -89.0f) angle_y = -89.0f;
 	}
 
-	//Actualizar la última posición del mouse
+	//Actualizar la Ãºltima posiciÃ³n del mouse
 	last_mouse_x = current_mouse_x;
 	last_mouse_y = current_mouse_y;
 }
 
-//Función para manejar el clic del mouse
+//FunciÃ³n para manejar el clic del mouse
 void mouseButton(/*GLFWwindow* window,*/) {
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		is_dragging = true;
@@ -76,16 +79,16 @@ void mouseButton(/*GLFWwindow* window,*/) {
 	}
 }
 
-//Función movimiento teclado
+//FunciÃ³n movimiento teclado
 void handleKeypress() {
-	//Movimiento de la vista de la cámara
+	//Movimiento de la vista de la cÃ¡mara
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) cam_pos_x += 0.2f / 100;
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) cam_pos_y += 0.2f / 100;
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) cam_pos_z += 0.2f / 100;
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) cam_pos_x -= 0.2f / 100;
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) cam_pos_y -= 0.2f / 100;
 	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) cam_pos_z -= 0.2f / 100;
-	//Movimiento de la posición de la cámara
+	//Movimiento de la posiciÃ³n de la cÃ¡mara
 	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) cam_cen_x += 0.2f / 100;
 	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) cam_cen_y += 0.2f / 100;
 	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) cam_cen_z += 0.2f / 100;
@@ -186,79 +189,90 @@ bool loadOBJ(const string& path) {
 			face.v1--;
 			face.v2--;
 			face.v3--;
-			obj.faces.push_back(face);
+			obj.caras.push_back(face);
 		}
 	}
 	objects3d.push_back(obj);
 	file.close();
 	return true;
-}
+}	
+float rot_angle_x = 45.0f;
+float rot_angle_z = 60.0f;
 void display(void)
 {
 	/*  clear all pixels  */
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //está borra la pantalla cada frame
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //estÃ¡ borra la pantalla cada frame
 	//color de borrado y el color del buffer
 
-	//Color de los vértices, openGL degrada el color de los vértices por default por eso las caras tienen color
+	//Color de los vÃ©rtices, openGL degrada el color de los vÃ©rtices por default por eso las faces tienen color
 	//glColor3f(1.0f, 0.0f, 0.0f);
 	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	glRotatef(angle_y, 1.0f, 0.0f, 0.0f); //Rotación vertical
-	glRotatef(angle_x, 0.0f, 1.0f, 0.0f); //Rotación horizontal
+	
+	glRotatef(angle_y, 1.0f, 0.0f, 0.0f); //RotaciÃ³n vertical
+	glRotatef(angle_x, 0.0f, 1.0f, 0.0f); //RotaciÃ³n horizontal
 	gluLookAt(cam_pos_x, cam_pos_y, cam_pos_z, cam_cen_x, cam_cen_y, cam_cen_z, 0.0, 1.0, 0.0);
 
-	//Dibujo del objeto
-	glBegin(GL_TRIANGLES);
-	//Para empezar a dibujar se debe mandar a llamar la función glBegin
+	float** mt, ** mr, ** mm, ** to, ** tpo;
 
-	//Puntos de control de Bézier
-	Vertex p1, p2, p3, p4;
-	p1.x = -15;
-	p1.y = -10;
-	p1.z = 2;
-	p2.x = -15; 
-	p2.y = 10;
-	p2.z = 2;
-	p3.x = 15;
-	p3.y = 10;
-	p3.z = 3;
-	p4.x = 15;
-	p4.y = -10;
-	p4.z = 3;
+	// Dibujo del objeto
+	glBegin(GL_TRIANGLES);
+	// Para empezar a dibujar se debe mandar a llamar la funciï¿½n glBegin
 	for (int o = 0; o < objects3d.size(); o++) {
-		Vertex vb = Bezier(p1, p2, p3, p4, objects3d[o].t);
-		Vertex fv = objects3d[o].faces[0].v1;
-		Matrix mt = Matrix::translationMatrix(vb.x - fv.x, vb.y - fv.y, vb.z - fv.z);
-		for (int c = 0; c < objects3d[o].faces.size(); c++) {
-			Vertex v1 = objects3d[o].vertices[objects3d[o].faces[c].v1];
-			Vertex v2 = objects3d[o].vertices[objects3d[o].faces[c].v2];
-			Vertex v3 = objects3d[o].vertices[objects3d[o].faces[c].v3];
-			// Transform each vertex of the face
-			Vertex vt1 = mt * v1;
-			Vertex vt2 = mt * v2;
-			Vertex vt3 = mt * v3;
-			// Draw the transformed vertices
-			int index = objects3d[o].faces[c].v1;
-			glColor3f(objects3d[o].vertices[index].r, objects3d[o].vertices[index].g, objects3d[o].vertices[index].b);
+		Vertex b = Bezier(objects3d[o].modelo.p[0], objects3d[o].modelo.p[1], objects3d[o].modelo.p[2], objects3d[o].modelo.p[3], objects3d[o].t);
+		mt = objects3d[o].modelo.trasMatrix(b.x - objects3d[o].center.x, b.y - objects3d[o].center.y, b.z - objects3d[o].center.z);
+		
+		if (o == 0) {
+			objects3d[o].modelo.ry += 1.0f;
+			mr = objects3d[o].modelo.rotMatrix(objects3d[o].center);
+		} else {
+			// Matriz de traslaciÃ³n para mover el objeto 1 hacia el centro del objeto 0
+			to = objects3d[o].modelo.trasMatrix(-objects3d[0].center.x, -objects3d[0].center.y, -objects3d[0].center.z);
+
+			// Rotaciones en cada eje alrededor del objeto 0
+			float** rotationX = objects3d[o].modelo.rxMatrix(rot_angle_x);
+			//float** rotationZ = objects3d[o].modelo.rzMatrix(rot_angle_z);
+			rot_angle_x += 4.0f;
+			//rot_angle_z += 4.0f;
+
+			// Traslada el objeto de regreso desde el origen relativo al objeto 0
+			tpo = objects3d[o].modelo.trasMatrix(objects3d[0].center.x, objects3d[0].center.y, objects3d[0].center.z);
+
+			// Orden correcto: traslaciÃ³n al origen, rotaciÃ³n, traslaciÃ³n de regreso
+			mr = objects3d[o].modelo.multMatrix(to, rotationX);
+			mr = objects3d[o].modelo.multMatrix(mr, tpo);
+		}
+		mm = objects3d[o].modelo.multMatrix(mt, mr);
+		
+		for (int c = 0; c < objects3d[o].caras.size(); c++) {
+			Vertex v1 = objects3d[o].vertices[objects3d[o].caras[c].v1];
+			Vertex v2 = objects3d[o].vertices[objects3d[o].caras[c].v2];
+			Vertex v3 = objects3d[o].vertices[objects3d[o].caras[c].v3];
+
+			Vertex vt1 = objects3d[o].modelo.resVector(mm, v1);
+			glColor3f(vt1.r, vt1.g, vt1.b);
 			glVertex3f(vt1.x, vt1.y, vt1.z);
-			index = objects3d[o].faces[c].v2;
-			glColor3f(objects3d[o].vertices[index].r, objects3d[o].vertices[index].g, objects3d[o].vertices[index].b);
+
+			Vertex vt2 = objects3d[o].modelo.resVector(mm, v2);
+			glColor3f(vt2.r, vt2.g, vt2.b);
 			glVertex3f(vt2.x, vt2.y, vt2.z);
-			index = objects3d[o].faces[c].v3;
-			glColor3f(objects3d[o].vertices[index].r, objects3d[o].vertices[index].g, objects3d[o].vertices[index].b);
+
+			Vertex vt3 = objects3d[o].modelo.resVector(mm, v3);
+			glColor3f(vt3.r, vt3.g, vt3.b);
 			glVertex3f(vt3.x, vt3.y, vt3.z);
 		}
-		objects3d[o].t += 0.005f;
-		if (objects3d[o].t >= 1.0f) objects3d[o].t = 0.0f;
+		objects3d[o].t += objects3d[o].incremento;
+		if (objects3d[o].t >= 1) objects3d[o].t = 0;
 	}
+
 	glEnd();
 
 	calculateFPS();
 	drawFPS(); //Draw FPS
 
-	glfwSwapBuffers(window); //se dibuja en un buffer de memoria atrás y cuando se deba cambiar de imagen, se cambia los buffers
-	glFlush(); //se eliminan las cosas que se deban eliminar, porque ya se terminó de dibujar
+	glfwSwapBuffers(window); //se dibuja en un buffer de memoria atrÃ¡s y cuando se deba cambiar de imagen, se cambia los buffers
+	glFlush(); //se eliminan las cosas que se deban eliminar, porque ya se terminÃ³ de dibujar
 }
 
 void init(void)
@@ -274,7 +288,7 @@ void init(void)
 	//gluOrtho2D(0.0, 800, 0.0, 600); //Set the 2D orthographic projection
 
 	gluPerspective(45.0, 800.0 / 600.0, 0.1, 100.0); //es la matriz de proyeccion
-	//ángulo de vista, aspecto donde va a dibujar los vértices, setANear, setAFar
+	//Ã¡ngulo de vista, aspecto donde va a dibujar los vÃ©rtices, setANear, setAFar
 	//en 2D se llama proyeccion ortogonal y en 3D es proyeccion en perspectiva
 
 	glMatrixMode(GL_MODELVIEW); //selecciona que tipo de matriz estamos trabajando
@@ -284,7 +298,7 @@ void init(void)
 	gluLookAt(cam_pos_x, cam_pos_y, cam_pos_z, cam_cen_x, cam_cen_y, cam_cen_z, 0.0, 1.0, 0.0);
 	//se compone de tres vectores, ojo (posicion donde esta la camara), centro (hacia donde ve la camara) y vector hacia arriba (es el eje hacia arriba: y = 1 | -1)
 
-	glEnable(GL_DEPTH_TEST); //el algoritmo del pintor, verifica la profundidad para que al hacer los modelos se hagan correctamente
+	glEnable(GL_DEPTH_TEST); //el algoritmo del pintor, verifica la profundidad para que al hacer los models se hagan correctamente
 }
 
 /*
@@ -297,16 +311,11 @@ void init(void)
 int main(int argc, char** argv)
 {
 	glutInit(&argc, argv); //Inicializa OpenGL
-	//glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH); //Dibuja, nos indica que usemos RGB, y el último es un buffer de profundidad
+	//glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH); //Dibuja, nos indica que usemos RGB, y el Ãºltimo es un buffer de profundidad
 	if (!glfwInit()) {
 		cerr << "Failed to initialize GLFW" << endl;
 		return -1;
 	}
-
-	//Glut inicializa ventanas, teclado, etc.
-	//glutInitWindowSize(800, 600); //Tamaño de la ventana
-	//glutInitWindowPosition(100, 100); //Posición inicial de la ventana
-	//glutCreateWindow("3D Model"); //Crea la ventana, podemos poner cualquier nombre a la ventana
 
 	//Create a windowed mode window and its OpenGL context
 	window = glfwCreateWindow(800, 600, "3D Model", NULL, NULL);
@@ -318,23 +327,33 @@ int main(int argc, char** argv)
 
 	//Make the window's context current
 	glfwMakeContextCurrent(window);
-	//glfwSetKeyCallback(window, handleKeypress); //Movimiento usando las teclas
-	//glfwSetCursorPosCallback(window, mouseMotion); //Movimiento del mouse con botón presionado
-	//glfwSetMouseButtonCallback(window, mouseButton); //Detecta clics del mouse
 	init(); //Initialize OpenGL settings
 	
 	glfwSwapInterval(1);
 
 	//Cargar el modelo .obj
-	if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\cubo.obj")) {
+	if (!loadOBJ("C:\\Users\\SaraÃ­\\source\\repos\\Project1\\cubo.obj")) {
 		return -1;
 	}
-	/*/if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\esfera.obj")) {
-		return -1;
+	if (!loadOBJ("C:\\Users\\SaraÃ­\\source\\repos\\Project1\\esfera.obj")) {
+		//return -1;
 	}
-	if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\capsula.obj")) {
+	/*if (!loadOBJ("C:\\Users\\SaraÃ­\\source\\repos\\Project1\\capsula.obj")) {
 		return -1;
 	}*/
+
+	objects3d[0].modelo.changeP(0, -6.0f, -2.5f, 1.0f);
+	objects3d[0].modelo.changeP(1, -6.0f, 6.0f, 1.0f);
+	objects3d[0].modelo.changeP(2, 5.0f, 6.0f, 1.0f);
+	objects3d[0].modelo.changeP(3, 5.0f, -2.5f, 1.0f);
+
+	objects3d[1].modelo.changeP(0, -6.0f, -2.5f, 1.0f);
+	objects3d[1].modelo.changeP(1, -6.0f, 6.0f, 1.0f);
+	objects3d[1].modelo.changeP(2, 5.0f, 6.0f, 1.0f);
+	objects3d[1].modelo.changeP(3, 5.0f, -2.5f, 1.0f);
+
+	objects3d[1].modelo.changeRot(0.0f, 45.5f, 0.0f);
+	objects3d[0].modelo.changeRot(0.0f, 0.0f, 0.0f);
 
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
 		double initial_time = glfwGetTime();
@@ -344,11 +363,6 @@ int main(int argc, char** argv)
 		handleKeypress();
 		glfwPollEvents();
 	}
-
-	//glutDisplayFunc(display); //Se debe registrar la función de dibujado
-	//glutIdleFunc(idle); //For continuous updates (FPS)
-	//glutIdleFunc(display); //Mientras el programa no está "haciendo algo"/inactivo se manda llamar la función para que este dibujando todo el tiempo o redibujando
-	//glutMainLoop(); //Esta función tiene un ciclo que se detiene hasta que se cierre la aplicación y manda llamar dentro del ciclo la función display() para estar dibujando
 
 	//Clean up GLFW
 	glfwTerminate();
