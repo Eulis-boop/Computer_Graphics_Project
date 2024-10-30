@@ -16,6 +16,7 @@
 #include "Object3D.h"
 #include "Face.h"
 #include "Matrix.h"
+#include "Vec3.h"
 
 using namespace std;
 GLFWwindow* window;
@@ -35,6 +36,48 @@ bool is_dragging = false; //Controlar si se está arrastrando el mouse
 
 // Variables para curva de Bezier
 float radius = 2.5;
+
+//Implementación función LookAt
+float** lookAt(const Vec3& eye, const Vec3& target, const Vec3& up) {
+	//Calculate the forward vector
+	Vec3 forward = (target - eye).normalize();
+	//Calculate the right vector
+	Vec3 right = up.cross(forward).normalize();
+	//Calculate the up vector
+	Vec3 up_corrected = forward.cross(right).normalize();
+
+	//Build the lookAt matrix
+	float** lookAt_matrix = new float* [4];
+	for (int i = 0; i < 4; i++)
+		lookAt_matrix[i] = new float[4]; // Allocate each row
+
+	// Primera fila
+	lookAt_matrix[0][0] = right.x;
+	lookAt_matrix[0][1] = right.y;
+	lookAt_matrix[0][2] = right.z;
+	lookAt_matrix[0][3] = -right.dot_negative(eye);
+
+	// Segunda fila
+	lookAt_matrix[1][0] = up_corrected.x;
+	lookAt_matrix[1][1] = up_corrected.y;
+	lookAt_matrix[1][2] = up_corrected.z;
+	lookAt_matrix[1][3] = -up_corrected.dot_negative(eye);
+
+	// Tercera fila
+	lookAt_matrix[2][0] = forward.x;
+	lookAt_matrix[2][1] = forward.y;
+	lookAt_matrix[2][2] = forward.z;
+	lookAt_matrix[2][3] = -forward.dot_negative(eye);
+
+	// Cuarta fila
+	lookAt_matrix[3][0] = 0.0f;
+	lookAt_matrix[3][1] = 0.0f;
+	lookAt_matrix[3][2] = 0.0f;
+	lookAt_matrix[3][3] = 1.0f;
+
+	return lookAt_matrix;
+}
+
 
 //Curva de Bézier
 Vertex Bezier(Vertex p1, Vertex p2, Vertex p3, Vertex p4, float t) {
@@ -196,6 +239,7 @@ bool loadOBJ(const string& path) {
 	file.close();
 	return true;
 }	
+
 float rot_angle_x = 45.0f;
 float rot_angle_z = 60.0f;
 void display(void)
@@ -206,14 +250,18 @@ void display(void)
 
 	//Color de los vértices, openGL degrada el color de los vértices por default por eso las faces tienen color
 	//glColor3f(1.0f, 0.0f, 0.0f);
-	
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	
-	glRotatef(angle_y, 1.0f, 0.0f, 0.0f); //Rotación vertical
-	glRotatef(angle_x, 0.0f, 1.0f, 0.0f); //Rotación horizontal
-	gluLookAt(cam_pos_x, cam_pos_y, cam_pos_z, cam_cen_x, cam_cen_y, cam_cen_z, 0.0, 1.0, 0.0);
 
+	//glRotatef(angle_y, 1.0f, 0.0f, 0.0f); //Rotación vertical
+	//glRotatef(angle_x, 0.0f, 1.0f, 0.0f); //Rotación horizontal
+	//gluLookAt(cam_pos_x, cam_pos_y, cam_pos_z, cam_cen_x, cam_cen_y, cam_cen_z, 0.0, 1.0, 0.0);
+	Vec3 eye = {cam_pos_x, cam_pos_y, cam_pos_z};
+	Vec3 target = { cam_cen_x, cam_cen_y, cam_cen_z };
+	Vec3 up = { 0.0f, 1.0f, 0.0f };
+	float** view_matrix = lookAt(eye, target, up);
+	
 	float** mt, ** mr, ** mm, ** to, ** tpo;
 
 	// Dibujo del objeto
@@ -234,7 +282,7 @@ void display(void)
 			float** rotationX = objects3d[o].modelo.rxMatrix(rot_angle_x);
 			//float** rotationZ = objects3d[o].modelo.rzMatrix(rot_angle_z);
 			rot_angle_x += 4.0f;
-			//rot_angle_z += 4.0f;
+			// rot_angle_z += 4.0f;
 
 			// Traslada el objeto de regreso desde el origen relativo al objeto 0
 			tpo = objects3d[o].modelo.trasMatrix(objects3d[0].center.x, objects3d[0].center.y, objects3d[0].center.z);
@@ -244,7 +292,8 @@ void display(void)
 			mr = objects3d[o].modelo.multMatrix(mr, tpo);
 		}
 		mm = objects3d[o].modelo.multMatrix(mt, mr);
-		
+		mm = objects3d[o].modelo.multMatrix(view_matrix, mm);
+
 		for (int c = 0; c < objects3d[o].caras.size(); c++) {
 			Vertex v1 = objects3d[o].vertices[objects3d[o].caras[c].v1];
 			Vertex v2 = objects3d[o].vertices[objects3d[o].caras[c].v2];
