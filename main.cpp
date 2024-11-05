@@ -385,7 +385,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\esfera.obj")) {
-		//return -1;
+		return -1;
 	}
 	/*if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\capsula.obj")) {
 		return -1;
