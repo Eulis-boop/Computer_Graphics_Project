@@ -27,7 +27,7 @@ int frame_count = 0, current_time = 0, previous_time = 0;
 float fps = 0.0f;
 
 //Variables movimiento con teclado
-float cam_pos_x = 0.0f, cam_pos_y = 0.0f, cam_pos_z = 30.0f;
+float cam_pos_x = 0.0f, cam_pos_y = 0.0f, cam_pos_z = 60.0f;
 float cam_cen_x = 0.0f, cam_cen_y = 0.0f, cam_cen_z = 0.0f;
 //Variables movimiento mouse
 float angle_x = 0.0f, angle_y = 0.0f;
@@ -36,6 +36,13 @@ bool is_dragging = false; //Controlar si se está arrastrando el mouse
 
 // Variables para curva de Bezier
 float radius = 2.5;
+
+//Variables para patitos
+float const ini_fuerza = 20.0f, ini_angulo = 5.0f, coef_restitutcion = 0.65f;
+float fuerza, angulo_elevacion, distancia;
+
+//Variables para activar/desactivar rotaciones
+bool x_activated = false, y_activated = false, z_activated = false;
 
 //Implementación función LookAt
 float** lookAt(const Vec3& eye, const Vec3& target, const Vec3& up) {
@@ -78,7 +85,6 @@ float** lookAt(const Vec3& eye, const Vec3& target, const Vec3& up) {
 	return lookAt_matrix;
 }
 
-
 //Curva de Bézier
 Vertex Bezier(Vertex p1, Vertex p2, Vertex p3, Vertex p4, float t) {
 	Vertex res;
@@ -86,6 +92,45 @@ Vertex Bezier(Vertex p1, Vertex p2, Vertex p3, Vertex p4, float t) {
 	res.y = powf(1 - t, 3) * p1.y + 3 * powf(1 - t, 2) * t * p2.y + 3 * (1 - t) * powf(t, 2) * p3.y + powf(t, 3) * p4.y;
 	res.z = powf(1 - t, 3) * p1.z + 3 * powf(1 - t, 2) * t * p2.z + 3 * (1 - t) * powf(t, 2) * p3.z + powf(t, 3) * p4.z;
 	return res;
+}
+
+//Patitos
+void simulateStoneSkipping(Vertex& P0, Vertex& P1, Vertex& P2, Vertex& P3) {
+	//Convertir ángulos de grados a radianes
+	float theta = angulo_elevacion * (M_PI / 180.0f);
+	//Componentes velocidad inicial
+	float v0x = fuerza * cos(theta);
+	float v0y = fuerza * sin(theta);
+	//Tiempo de vuelo
+	float tiempo_vuelo = (2 * v0y) / 9.81;
+	//Altura máxima
+	float altura_max = (v0y * v0y) / (2 * 9.81);
+	//Distancia
+	distancia = v0x * tiempo_vuelo;
+
+	P0 = P3;
+	P1.x = P0.x + (distancia / 4);		P1.y = altura_max;	P1.z = P0.z;
+	P2.x = P0.x + (3 * distancia / 4);	P2.y = altura_max;	P2.z = P0.z;
+	P3.x = P0.x + distancia;			P3.y = P0.y;		P3.z = P0.z;
+
+	//Aplicar pérdida de energía usando el coeficiente de restitución
+	v0x *= coef_restitutcion;
+	v0y *= coef_restitutcion;
+
+	//Reducir la fuerza y el angulo de elevación para el próximo salto
+	angulo_elevacion = atan2(v0y, v0x) * (180.0f / M_PI);
+	fuerza = sqrt(v0x * v0x + v0y * v0y);
+}
+
+//Restablecer valores de simulación
+void ini_simulation(int o) {
+	fuerza = ini_fuerza;
+	angulo_elevacion = ini_angulo;
+
+	objects3d[o].modelo.changeP(0, -25.0f, -10.5f, 6.0f);
+	objects3d[o].modelo.changeP(1, -25.0f, -10.5f, 6.0f);
+	objects3d[o].modelo.changeP(2, -25.0f, -10.5f, 6.0f);
+	objects3d[o].modelo.changeP(3, -25.0f, -10.5f, 6.0f);
 }
 
 //Función movimiento mouse
@@ -128,9 +173,9 @@ void handleKeypress() {
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) cam_pos_x += 0.2f / 100;
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) cam_pos_y += 0.2f / 100;
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) cam_pos_z += 0.2f / 100;
-	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) cam_pos_x -= 0.2f / 100;
-	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) cam_pos_y -= 0.2f / 100;
-	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) cam_pos_z -= 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) cam_pos_x -= 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) cam_pos_y -= 0.2f / 100;
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) cam_pos_z -= 0.2f / 100;
 	//Movimiento de la posición de la cámara
 	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) cam_cen_x += 0.2f / 100;
 	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS) cam_cen_y += 0.2f / 100;
@@ -140,6 +185,25 @@ void handleKeypress() {
 	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) cam_cen_z -= 0.2f / 100;
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+}
+
+void keyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (action == GLFW_PRESS) {
+		switch (key) {
+		case GLFW_KEY_X:
+			x_activated = !x_activated;
+			break;
+		case GLFW_KEY_Y:
+			y_activated = !y_activated;
+			break;
+		case GLFW_KEY_Z:
+			z_activated = !z_activated;
+			break;
+		case GLFW_KEY_ESCAPE:
+			glfwSetWindowShouldClose(window, true);
+			break;
+		}
+	}
 }
 
 void printText(float x, float y, const char* text) {
@@ -238,14 +302,12 @@ bool loadOBJ(const string& path) {
 	objects3d.push_back(obj);
 	file.close();
 	return true;
-}	
+}
 
-float rot_angle_x = 45.0f;
-float rot_angle_z = 60.0f;
 void display(void)
 {
 	/*  clear all pixels  */
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //está borra la pantalla cada frame
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //esta borra la pantalla cada frame
 	//color de borrado y el color del buffer
 
 	//Color de los vértices, openGL degrada el color de los vértices por default por eso las faces tienen color
@@ -261,36 +323,23 @@ void display(void)
 	Vec3 target = { cam_cen_x, cam_cen_y, cam_cen_z };
 	Vec3 up = { 0.0f, 1.0f, 0.0f };
 	float** view_matrix = lookAt(eye, target, up);
-	
+
 	float** mt, ** mr, ** mm, ** to, ** tpo;
 
 	// Dibujo del objeto
 	glBegin(GL_TRIANGLES);
-	// Para empezar a dibujar se debe mandar a llamar la funci�n glBegin
+	// Para empezar a dibujar se debe mandar a llamar la función glBegin
 	for (int o = 0; o < objects3d.size(); o++) {
 		Vertex b = Bezier(objects3d[o].modelo.p[0], objects3d[o].modelo.p[1], objects3d[o].modelo.p[2], objects3d[o].modelo.p[3], objects3d[o].t);
 		mt = objects3d[o].modelo.trasMatrix(b.x - objects3d[o].center.x, b.y - objects3d[o].center.y, b.z - objects3d[o].center.z);
-		
-		if (o == 0) {
-			objects3d[o].modelo.ry += 1.0f;
-			mr = objects3d[o].modelo.rotMatrix(objects3d[o].center);
-		} else {
-			// Matriz de traslación para mover el objeto 1 hacia el centro del objeto 0
-			to = objects3d[o].modelo.trasMatrix(-objects3d[0].center.x, -objects3d[0].center.y, -objects3d[0].center.z);
+		if (x_activated)
+			objects3d[o].modelo.rx += 5.0f;
+		if (y_activated)
+			objects3d[o].modelo.ry += 1.5f;
+		if (z_activated)
+			objects3d[o].modelo.rz += 3.0f;
 
-			// Rotaciones en cada eje alrededor del objeto 0
-			float** rotationX = objects3d[o].modelo.rxMatrix(rot_angle_x);
-			//float** rotationZ = objects3d[o].modelo.rzMatrix(rot_angle_z);
-			rot_angle_x += 4.0f;
-			// rot_angle_z += 4.0f;
-
-			// Traslada el objeto de regreso desde el origen relativo al objeto 0
-			tpo = objects3d[o].modelo.trasMatrix(objects3d[0].center.x, objects3d[0].center.y, objects3d[0].center.z);
-
-			// Orden correcto: traslación al origen, rotación, traslación de regreso
-			mr = objects3d[o].modelo.multMatrix(to, rotationX);
-			mr = objects3d[o].modelo.multMatrix(mr, tpo);
-		}
+		mr = objects3d[o].modelo.rotMatrix(objects3d[o].center);
 		mm = objects3d[o].modelo.multMatrix(mt, mr);
 		mm = objects3d[o].modelo.multMatrix(view_matrix, mm);
 
@@ -311,8 +360,15 @@ void display(void)
 			glColor3f(vt3.r, vt3.g, vt3.b);
 			glVertex3f(vt3.x, vt3.y, vt3.z);
 		}
-		objects3d[o].t += objects3d[o].incremento;
-		if (objects3d[o].t >= 1) objects3d[o].t = 0;
+
+		if (objects3d[o].t >= 1) {
+			objects3d[o].t = 0.0f;
+			if (distancia < 1.0f)
+				ini_simulation(o);
+			simulateStoneSkipping(objects3d[o].modelo.p[0], objects3d[o].modelo.p[1], objects3d[o].modelo.p[2], objects3d[o].modelo.p[3]);
+		}
+		else
+			objects3d[o].t += objects3d[o].incremento;
 	}
 
 	glEnd();
@@ -377,32 +433,20 @@ int main(int argc, char** argv)
 	//Make the window's context current
 	glfwMakeContextCurrent(window);
 	init(); //Initialize OpenGL settings
-	
+
 	glfwSwapInterval(1);
 
 	//Cargar el modelo .obj
-	if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\cubo.obj")) {
+	if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\examen.obj")) {
 		return -1;
 	}
-	if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\esfera.obj")) {
-		return -1;
-	}
-	/*if (!loadOBJ("C:\\Users\\Saraí\\source\\repos\\Project1\\capsula.obj")) {
-		return -1;
-	}*/
 
-	objects3d[0].modelo.changeP(0, -6.0f, -2.5f, 1.0f);
-	objects3d[0].modelo.changeP(1, -6.0f, 6.0f, 1.0f);
-	objects3d[0].modelo.changeP(2, 5.0f, 6.0f, 1.0f);
-	objects3d[0].modelo.changeP(3, 5.0f, -2.5f, 1.0f);
+	ini_simulation(0);
+	simulateStoneSkipping(objects3d[0].modelo.p[0], objects3d[0].modelo.p[1], objects3d[0].modelo.p[2], objects3d[0].modelo.p[3]);
 
-	objects3d[1].modelo.changeP(0, -6.0f, -2.5f, 1.0f);
-	objects3d[1].modelo.changeP(1, -6.0f, 6.0f, 1.0f);
-	objects3d[1].modelo.changeP(2, 5.0f, 6.0f, 1.0f);
-	objects3d[1].modelo.changeP(3, 5.0f, -2.5f, 1.0f);
+	objects3d[0].modelo.changeRot(0.0f, 90.0f, 0.0f);
 
-	objects3d[1].modelo.changeRot(0.0f, 45.5f, 0.0f);
-	objects3d[0].modelo.changeRot(0.0f, 0.0f, 0.0f);
+	glfwSetKeyCallback(window, keyCallBack);
 
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
 		double initial_time = glfwGetTime();

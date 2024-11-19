@@ -6,4 +6,3 @@ public:
 	//Colores RGB
 	float r, g, b;
 };
-

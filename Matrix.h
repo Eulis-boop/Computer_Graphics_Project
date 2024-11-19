@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <vector>
 #include <cmath>
 #include <random>
@@ -18,9 +19,9 @@ public:
 
 	Matrix() {
 		std::random_device rd; // Obtiene una semilla aleatoria
-		std::mt19937 gen(rd()); // Generador de n?meros aleatorios
-		std::uniform_real_distribution<float> t_dist(-20.5f, 16.0f); // Distribuci?n para la traslaci?n entre 0.5 y 6
-		std::uniform_real_distribution<float> r_dist(0.0f, 180.0f); // Distribuci?n para la rotaci?n entre 0 y 180
+		std::mt19937 gen(rd()); // Generador de números aleatorios
+		std::uniform_real_distribution<float> t_dist(-20.5f, 16.0f); // Distribución para la traslación entre 0.5 y 6
+		std::uniform_real_distribution<float> r_dist(0.0f, 180.0f); // Distribución para la rotación entre 0 y 180
 
 		p->b = p->g = p->r = 0.0f;
 		for (int i = 0; i < 3; i++) {
